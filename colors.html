@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Color names and guide supplied by https://xkcd.com/color/rgb.txt -->
+    <!-- License: https://creativecommons.org/publicdomain/zero/1.0/ -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Spectrum Webapp</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .control-bar {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .spectrum-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .spectrum-row.coupled {
+            margin-bottom: 5px;
+        }
+        
+        .spectrum-row.coupled + .spectrum-row.coupled {
+            margin-bottom: 45px;
+        }
+        
+        .row-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            min-width: 280px;
+        }
+        
+        .row-controls input[type="number"] {
+            width: 50px;
+            padding: 2px 4px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .trash-btn {
+            background-color: #ff4444 !important;
+            color: white !important;
+            border-color: #cc0000 !important;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .trash-btn:hover {
+            background-color: #cc0000 !important;
+        }
+        
+        .add-row-btn {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .add-row-btn:hover {
+            background-color: #45a049;
+        }
+        
+        label {
+            font-weight: bold;
+        }
+        
+        input[type="number"] {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 80px;
+        }
+        
+        
+        .spectrum-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .hue-axis {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .spectrum-band {
+            width: 100%;
+            height: 40px;
+            background: linear-gradient(to right, 
+                hsl(0, 100%, 50%),
+                hsl(60, 100%, 50%),
+                hsl(120, 100%, 50%),
+                hsl(180, 100%, 50%),
+                hsl(240, 100%, 50%),
+                hsl(300, 100%, 50%),
+                hsl(360, 100%, 50%)
+            );
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+        
+        .digitized-band {
+            width: 100%;
+            height: 40px;
+            display: flex;
+            border: 1px solid #ccc;
+            flex: 1;
+        }
+        
+        .color-segment {
+            flex: 1;
+            border-right: 1px solid #ccc;
+        }
+        
+        .color-segment:last-child {
+            border-right: none;
+        }
+        
+        h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .band-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        .hue-grids-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        
+        .hue-grids {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .hue-grid-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .hue-grid {
+            position: relative;
+            background-color: white;
+            padding: calc(12px * var(--card-scale, 1));
+            border-radius: calc(12px * var(--card-scale, 1));
+            border: solid lightgray 1px;
+            -box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .grid-cell {
+            border: 1px solid #ddd;
+            display: inline-block;
+        }
+        
+        .grid-row {
+            display: flex;
+            height: calc(60px * var(--card-scale, 1));
+            gap: calc(8px * var(--card-scale, 1));
+            margin-bottom: calc(8px * var(--card-scale, 1));
+        }
+        
+        .grid-cell {
+            width: calc(60px * var(--card-scale, 1));
+            height: calc(60px * var(--card-scale, 1));
+            border-radius: calc(8px * var(--card-scale, 1));
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            transition: transform 0.2s ease;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            font-size: calc(8px * var(--card-scale, 1));
+            font-weight: bold;
+            text-align: center;
+            color: white;
+            text-shadow: none;
+            padding: calc(2px * var(--card-scale, 1));
+            box-sizing: border-box;
+            position: relative;
+        }
+        
+        .grid-cell::after {
+            content: attr(data-color-name);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: calc(2px * var(--card-scale, 1)) calc(4px * var(--card-scale, 1));
+            border-radius: calc(10px * var(--card-scale, 1));
+            font-size: calc(var(--card-font-size, 7) * 1px);
+            font-weight: bold;
+            position: absolute;
+            bottom: calc(2px * var(--card-scale, 1));
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            max-width: calc(56px * var(--card-scale, 1));
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: var(--chip-display, block);
+        }
+        
+        .grid-cell[data-color-name=""] {
+            --chip-display: none;
+        }
+        
+        .grid-cell.hide-chip {
+            --chip-display: none;
+        }
+        
+        .grid-cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+        }
+        
+        .grid-cell.highlighted {
+            border: 3px solid #ff6b35;
+            box-shadow: 0 0 15px rgba(255, 107, 53, 0.6);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .grid-cell.highlighted.no-animation {
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .grid-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .axis-labels {
+            position: relative;
+        }
+        
+        .x-axis {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            font-size: 12px;
+            color: #666;
+            width: 100%;
+        }
+        
+        .y-axis {
+            position: absolute;
+            left: -35px;
+            top: 12px;
+            height: calc(100% - 24px);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #666;
+            width: 30px;
+        }
+        
+        .y-axis span {
+            transform: translateY(-50%);
+            text-align: right;
+        }
+        
+        .grid-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .axis-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .x-axis-title {
+            text-align: center;
+            margin-top: 8px;
+        }
+        
+        .y-axis-title {
+            position: absolute;
+            left: -55px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+            transform-origin: center;
+        }
+        
+        .color-preview {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            display: none;
+        }
+        
+        .color-preview::after {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            white-space: nowrap;
+        }
+        
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        
+        .suggestion-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+            flex-shrink: 0;
+        }
+        
+        .suggestion-name {
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .color-swatch {
+            width: 80px;
+            height: 60px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .color-swatch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border-color: #007bff;
+        }
+        
+        .color-swatch-name {
+            background-color: rgba(255,255,255,0.9);
+            color: #333;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 4px;
+            border-radius: 3px;
+            text-align: center;
+            margin-top: auto;
+            margin-bottom: 2px;
+            text-shadow: none;
+            max-width: 76px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media print {
+            .hue-grid-item {
+                page-break-before: always;
+                page-break-inside: avoid;
+            }
+            
+            .hue-grid-item:first-child {
+                page-break-before: auto;
+            }
+            
+            .control-bar,
+            .distance-visualizer,
+            .color-reference-container {
+                display: none;
+            }
+            
+            .hue-grids-container {
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+            
+            .hue-grids {
+                display: block;
+            }
+            
+            .grid-cell {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+                box-shadow: none !important;
+                transform: none !important;
+            }
+            
+            .hue-grid {
+                box-shadow: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="control-bar">
+        <div class="control-group">
+            <label for="num-colors">Number of Colors:</label>
+            <input type="number" id="num-colors" value="12" min="2" max="36" step="1">
+            <label for="grid-rows" style="margin-left: 20px;">Grid Rows:</label>
+            <input type="number" id="grid-rows" value="5" min="2" max="8" step="1">
+            <label for="grid-cols">Grid Cols:</label>
+            <input type="number" id="grid-cols" value="6" min="3" max="12" step="1">
+            <label for="max-distance" style="margin-left: 20px;">Max Distance:</label>
+            <input type="number" id="max-distance" value="50" min="0" max="200" step="5">
+            <label for="card-scale" style="margin-left: 20px;">Card Scale:</label>
+            <input type="number" id="card-scale" value="2.5" min="0.5" max="3.0" step="0.1">
+            <label for="card-font-size" style="margin-left: 20px;">Font Size:</label>
+            <input type="number" id="card-font-size" value="12" min="4" max="12" step="1">
+            <button id="toggle-distance-viz" style="margin-left: 20px; padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Show Distance Visualizer</button>
+            <button id="toggle-color-reference" style="margin-left: 10px; padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Show Color Reference</button>
+        </div>
+        <div class="control-group" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+            <label for="color-search">Search Color:</label>
+            <div style="position: relative; display: inline-block;">
+                <input type="text" id="color-search" placeholder="Enter exact color name from JS file (e.g., 'red')" style="width: 200px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                <div id="color-suggestions" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-top: none; border-radius: 0 0 4px 4px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none;"></div>
+            </div>
+            <label style="margin-left: 10px;">
+                <input type="checkbox" id="preview-color" style="margin-right: 5px;">
+                Preview color
+            </label>
+            <button id="search-color-btn" style="margin-left: 10px; padding: 5px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Search</button>
+            <button id="clear-search-btn" style="margin-left: 5px; padding: 5px 15px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Clear</button>
+            <button id="color-picker-btn" style="margin-left: 5px; padding: 5px 15px; background-color: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;" title="Click to pick a color from the spectrum or grids">🎨</button>
+        </div>
+        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; font-size: 11px; color: #666; font-style: italic;">
+            Color names and guide supplied by <a href="https://xkcd.com/color/rgb.txt" target="_blank" style="color: #007bff; text-decoration: none;">https://xkcd.com/color/rgb.txt</a> • 
+            License: <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" style="color: #007bff; text-decoration: none;">CC0 1.0</a>
+        </div>
+    </div>
+    
+    <div class="distance-visualizer" id="distance-visualizer" style="display: none;">
+        <div style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">
+            <h3 style="margin-top: 0;">Max Distance Visualizer</h3>
+            <div style="display: flex; align-items: center; gap: 30px;">
+                <div style="position: relative;">
+                    <canvas id="hue-sat-wheel" width="200" height="200" style="border: 1px solid #ccc; border-radius: 50%;"></canvas>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                <h4 style="margin-top: 0; color: #333;">RGB Distance Theory</h4>
+                <p style="font-size: 13px; color: #666; margin-bottom: 10px;">
+                    The maximum theoretical distance in RGB color space is between pure black (0,0,0) and pure white (255,255,255):
+                </p>
+                <div style="font-family: monospace; background-color: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px; color: #495057;">
+                    distance = √((255-0)² + (255-0)² + (255-0)²)<br>
+                    distance = √(255² + 255² + 255²)<br>
+                    distance = √(3 × 65025)<br>
+                    distance = √195075<br>
+                    distance ≈ <strong>441.67</strong>
+                </div>
+                <p style="font-size: 13px; color: #666; margin-top: 10px; margin-bottom: 0;">
+                    Current Max Distance range (0-200) covers 0-45% of the theoretical maximum.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="spectrum-container">
+        <h2>Color Spectrum</h2>
+        
+        <div class="spectrum-row coupled">
+            <div class="row-controls">
+                <span>S:</span>
+                <input type="number" value="100" min="0" max="100" step="1" onchange="setContinuousSaturation(this.value)">
+                <span>L:</span>
+                <input type="number" value="50" min="0" max="100" step="1" onchange="setContinuousLightness(this.value)">
+                <button class="trash-btn" onclick="removeRow('continuous')" style="visibility: hidden;">🗑</button>
+            </div>
+            <div style="flex: 1;">
+                <div class="hue-axis" id="hue-axis">
+                    <span>0°</span>
+                    <span>60°</span>
+                    <span>120°</span>
+                    <span>180°</span>
+                    <span>240°</span>
+                    <span>300°</span>
+                    <span>360°</span>
+                </div>
+                <div class="spectrum-band" id="continuous-band" data-saturation="100" data-lightness="50"></div>
+            </div>
+        </div>
+        
+        <div class="spectrum-row coupled">
+            <div class="row-controls">
+                <span style="color: #999;">S:</span>
+                <input type="number" value="100" min="0" max="100" step="1" disabled style="background-color: #f5f5f5; color: #999;">
+                <span style="color: #999;">L:</span>
+                <input type="number" value="50" min="0" max="100" step="1" disabled style="background-color: #f5f5f5; color: #999;">
+                <button class="trash-btn" onclick="removeRow('digitized')" style="visibility: hidden;">🗑</button>
+            </div>
+            <div class="digitized-band" id="digitized-band" data-saturation="100" data-lightness="50"></div>
+        </div>
+        
+        <!-- <div class="spectrum-row" id="custom-row">
+            <div class="row-controls">
+                <span>S:</span>
+                <input type="number" value="90" min="0" max="100" step="1" onchange="setSaturation('custom', this.value)">
+                <span>L:</span>
+                <input type="number" value="50" min="0" max="100" step="1" onchange="setLightness('custom', this.value)">
+                <button class="trash-btn" onclick="removeRow('custom')">🗑</button>
+            </div>
+            <div class="digitized-band" id="custom-band" data-saturation="90" data-lightness="50"></div>
+        </div> -->
+        
+        <div class="control-bar" style="margin-top: 20px;">
+            <button class="add-row-btn" onclick="addRow()">Add Row</button>
+        </div>
+    </div>
+    
+    <div class="color-reference-container" id="color-reference-container" style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: none;">
+        <h2 style="margin: 0 0 15px 0;">Color Reference</h2>
+        
+        <div id="color-reference-content">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+                <p style="font-size: 14px; color: #666; margin: 0; font-style: italic;">
+                    Click any color to search for it in the grids above
+                </p>
+                <label style="display: flex; align-items: center; gap: 5px; font-size: 14px; color: #333; cursor: pointer;">
+                    <input type="checkbox" id="select-all-reference-colors" style="margin: 0;">
+                    Show only reference colors names in grids
+                    <span id="reference-colors-spinner" class="spinner" style="display: none;"></span>
+                </label>
+            </div>
+            
+            <div class="color-category" style="margin-bottom: 25px;">
+                <h3 style="color: #333; margin-bottom: 15px; font-size: 16px;">Basic Colors</h3>
+                <div id="basic-colors" class="color-grid" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <!-- Basic colors will be generated here -->
+                </div>
+            </div>
+            
+            <div class="color-category" style="margin-bottom: 25px;">
+                <h3 style="color: #333; margin-bottom: 15px; font-size: 16px;">Advanced colors</h3>
+                <div id="tier2-colors" class="color-grid" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <!-- Tier 2 colors will be generated here -->
+                </div>
+            </div>
+            
+            <div class="color-category" style="margin-bottom: 25px;">
+                <h3 style="color: #333; margin-bottom: 15px; font-size: 16px;">Neutrals + Earth Tones</h3>
+                <div id="neutral-colors" class="color-grid" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <!-- Neutral colors will be generated here -->
+                </div>
+            </div>
+            
+            <div class="color-category" style="margin-bottom: 25px;">
+                <h3 style="color: #333; margin-bottom: 15px; font-size: 16px;">Jewel Tones</h3>
+                <div id="jewel-colors" class="color-grid" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <!-- Jewel colors will be generated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="hue-grids-container">
+        <h2>Hue Grids</h2>
+        <p style="font-size: 14px; color: #666; margin-bottom: 20px; font-style: italic;">
+            Horizontal axis: Saturation (S) (less: less pigment and color) • Vertical axis: Lightness (L) (less: more black into it) 
+        </p>
+        <div class="hue-grids" id="hue-grids">
+            <!-- Hue grids will be generated here -->
+        </div>
+    </div>
+
+    <script src="rgb.js"></script>
+    <script>
+        let rowCounter = 0;
+        let colorPreviewElement = null;
+        let isPreviewMode = false;
+        let currentPreviewColor = null;
+        let isColorPickerMode = false;
+        
+        // Color reference categories
+        const colorReference = {
+            basic: [
+                'red',
+                'orange',
+                'brown',
+                'yellow',
+                'green',
+                'cyan',
+                'blue',
+                'purple',
+                'pink',
+                'gray',
+                'black',
+                'white'
+            ],
+            tier2: [
+                // reds → red-oranges
+                'maroon',
+                'burgundy',
+                'wine',
+                'coral',
+                'salmon',
+
+                // yellow-greens → greens
+                // neutrals / low-saturation
+                'beige',                
+                'ivory',
+                'cream',
+
+                'olive',
+                'lime',
+                'chartreuse',
+
+                // blue-greens → cyans
+                'teal',
+                'turquoise',
+                'aqua',
+                
+
+                // blues → violets
+                'navy',
+                'indigo',
+                'lavender',
+
+                // magentas (back toward red)
+                'fuchsia',
+                'magenta',                    
+            ],
+            neutral: [
+                // warm earth tones (reddish → yellowish)
+                'rust',
+                'terracotta',
+                'sienna',
+                'taupe',
+                'umber',
+                'stone',
+                'cement',
+                
+                'camel',
+                'tan',
+                'sand',
+                'ochre',
+
+                // cool/true neutrals
+                'charcoal',
+                'slate',
+                
+            ],
+            jewel: ['ruby', 'emerald', 'sapphire', 'amethyst']
+        };
+
+        
+        function drawHueSatWheel() {
+            const canvas = document.getElementById('hue-sat-wheel');
+            const ctx = canvas.getContext('2d');
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 90;
+            const maxDistance = parseInt(document.getElementById('max-distance').value);
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.width);
+            
+            // Create continuous hue/saturation wheel using radial approach
+            for (let angle = 0; angle < 360; angle += 0.5) {
+                for (let r = 0; r <= radius; r += 0.5) {
+                    const hue = angle;
+                    const saturation = (r / radius) * 100;
+                    const lightness = 50; // Fixed lightness
+                    
+                    const x = centerX + r * Math.cos(angle * Math.PI / 180);
+                    const y = centerY + r * Math.sin(angle * Math.PI / 180);
+                    
+                    ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 1, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+            
+            // Draw distance circle overlay
+            const visualRadius = Math.min(radius, (maxDistance / 441.67) * radius); // Scale to wheel size
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, visualRadius, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, visualRadius, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Draw center point
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 3, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+        
+        function drawDistanceCircle() {
+            const canvas = document.getElementById('distance-circle');
+            const ctx = canvas.getContext('2d');
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const maxDistance = parseInt(document.getElementById('max-distance').value);
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background grid
+            ctx.strokeStyle = '#f0f0f0';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 200; i += 20) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, 200);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(200, i);
+                ctx.stroke();
+            }
+            
+            // Draw distance circle (scale down for visualization)
+            const visualRadius = Math.min(90, (maxDistance / 441.67) * 90); // 441.67 is max RGB distance
+            
+            ctx.fillStyle = 'rgba(0, 123, 255, 0.2)';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, visualRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#007bff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw center point
+            ctx.fillStyle = '#007bff';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 3, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Add distance label
+            ctx.fillStyle = 'black';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Distance: ${maxDistance}`, centerX, centerY + 25);
+        }
+        
+        function toggleDistanceVisualizer() {
+            const visualizer = document.getElementById('distance-visualizer');
+            const button = document.getElementById('toggle-distance-viz');
+            
+            if (visualizer.style.display === 'none') {
+                visualizer.style.display = 'block';
+                button.textContent = 'Hide Distance Visualizer';
+                drawHueSatWheel();
+            } else {
+                visualizer.style.display = 'none';
+                button.textContent = 'Show Distance Visualizer';
+            }
+        }
+        
+        function toggleColorReference() {
+            const container = document.getElementById('color-reference-container');
+            const button = document.getElementById('toggle-color-reference');
+            
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                button.textContent = 'Hide Color Reference';
+                generateColorReference();
+            } else {
+                container.style.display = 'none';
+                button.textContent = 'Show Color Reference';
+            }
+        }
+        
+        function findColorInJS(colorName) {
+            const nameLower = colorName.toLowerCase();
+            
+            // Find exact match in colors object (case-insensitive)
+            for (const [hex, name] of Object.entries(colors)) {
+                if (name.toLowerCase() === nameLower) {
+                    return { hex, name };
+                }
+            }
+            
+            return null;
+        }
+        
+        function generateColorReference() {
+            // Generate basic colors
+            const basicContainer = document.getElementById('basic-colors');
+            basicContainer.innerHTML = '';
+            colorReference.basic.forEach(colorName => {
+                const colorData = findColorInJS(colorName);
+                if (colorData) {
+                    createColorSwatch(colorData, basicContainer);
+                }
+            });
+            
+            // Generate tier 2 colors
+            const tier2Container = document.getElementById('tier2-colors');
+            tier2Container.innerHTML = '';
+            colorReference.tier2.forEach(colorName => {
+                const colorData = findColorInJS(colorName);
+                if (colorData) {
+                    createColorSwatch(colorData, tier2Container);
+                }
+            });
+            
+            // Generate neutral colors
+            const neutralContainer = document.getElementById('neutral-colors');
+            neutralContainer.innerHTML = '';
+            colorReference.neutral.forEach(colorName => {
+                const colorData = findColorInJS(colorName);
+                if (colorData) {
+                    createColorSwatch(colorData, neutralContainer);
+                }
+            });
+            
+            // Generate jewel colors
+            const jewelContainer = document.getElementById('jewel-colors');
+            jewelContainer.innerHTML = '';
+            colorReference.jewel.forEach(colorName => {
+                const colorData = findColorInJS(colorName);
+                if (colorData) {
+                    createColorSwatch(colorData, jewelContainer);
+                }
+            });
+        }
+        
+        function createColorSwatch(colorData, container) {
+            const swatch = document.createElement('div');
+            swatch.className = 'color-swatch';
+            swatch.style.backgroundColor = colorData.hex;
+            
+            const name = document.createElement('div');
+            name.className = 'color-swatch-name';
+            name.textContent = colorData.name;
+            
+            swatch.appendChild(name);
+            
+            // Add click handler to search for this color
+            swatch.addEventListener('click', () => {
+                document.getElementById('color-search').value = colorData.name;
+                searchColor();
+            });
+            
+            container.appendChild(swatch);
+        }
+        
+        function selectAllReferenceColors() {
+            const isChecked = document.getElementById('select-all-reference-colors').checked;
+            const spinner = document.getElementById('reference-colors-spinner');
+            
+            if (isChecked) {
+                // Show spinner
+                spinner.style.display = 'inline-block';
+                
+                // Use setTimeout to allow spinner to show before heavy computation
+                setTimeout(() => {
+                    // Clear any existing highlights first
+                    document.querySelectorAll('.grid-cell.highlighted').forEach(cell => {
+                        cell.classList.remove('highlighted');
+                    });
+                    
+                    // Hide all chips first
+                    document.querySelectorAll('.grid-cell').forEach(cell => {
+                        cell.classList.add('hide-chip');
+                    });
+                    
+                    // Collect all reference colors
+                    const allReferenceColors = [
+                        ...colorReference.basic,
+                        ...colorReference.tier2,
+                        ...colorReference.neutral,
+                        ...colorReference.jewel
+                    ];
+                    
+                    // Find and highlight all reference colors in grids
+                    let highlightedCount = 0;
+                    allReferenceColors.forEach((colorName, index) => {
+                        const colorData = findColorInJS(colorName);
+                        if (colorData) {
+                            const targetColor = {
+                                r: parseInt(colorData.hex.slice(1, 3), 16),
+                                g: parseInt(colorData.hex.slice(3, 5), 16),
+                                b: parseInt(colorData.hex.slice(5, 7), 16)
+                            };
+                            
+                            const result = findClosestGridCell(targetColor);
+                            if (result) {
+                                // Show chip for this reference color with original name in parentheses
+                                const hueGrids = document.getElementById('hue-grids');
+                                const gridItems = hueGrids.children;
+                                if (gridItems[result.colorIndex]) {
+                                    const grid = gridItems[result.colorIndex].querySelector('.hue-grid');
+                                    const gridRows = grid.children;
+                                    if (gridRows[result.row]) {
+                                        const cells = gridRows[result.row].children;
+                                        if (cells[result.col]) {
+                                            cells[result.col].classList.remove('hide-chip');
+                                            // Store original color name for display
+                                            const originalColorName = cells[result.col].getAttribute('data-color-name');
+                                            const displayName = originalColorName ? `${originalColorName} (${colorName})` : `(${colorName})`;
+                                            cells[result.col].setAttribute('data-color-name', displayName);
+                                            cells[result.col].setAttribute('data-original-color-name', originalColorName);
+                                        }
+                                    }
+                                }
+                                highlightedCount++;
+                            }
+                        }
+                    });
+                    
+                    // Hide spinner
+                    spinner.style.display = 'none';
+                    
+                    // Show result message
+                    showSearchResult(`Highlighted ${highlightedCount} reference colors in grids`, {
+                        colorIndex: 0,
+                        row: 0,
+                        col: 0,
+                        cellColor: { hex: '#000000' }
+                    });
+                }, 10);
+                
+            } else {
+                // Show all chips again and restore original names
+                document.querySelectorAll('.grid-cell').forEach(cell => {
+                    cell.classList.remove('hide-chip');
+                    // Restore original color name if it was modified
+                    const originalName = cell.getAttribute('data-original-color-name');
+                    if (originalName !== null) {
+                        cell.setAttribute('data-color-name', originalName);
+                        cell.removeAttribute('data-original-color-name');
+                    }
+                });
+                
+                // Remove any existing result message
+                const existingMsg = document.getElementById('search-result-msg');
+                if (existingMsg) existingMsg.remove();
+                
+                // Hide spinner
+                spinner.style.display = 'none';
+            }
+        }
+        
+        function findExactColorByName(input) {
+            const inputLower = input.trim().toLowerCase();
+            
+            // Find exact match in colors object (case-insensitive)
+            for (const [hex, name] of Object.entries(colors)) {
+                if (name.toLowerCase() === inputLower) {
+                    const r = parseInt(hex.slice(1, 3), 16);
+                    const g = parseInt(hex.slice(3, 5), 16);
+                    const b = parseInt(hex.slice(5, 7), 16);
+                    return { r, g, b, hex, name };
+                }
+            }
+            
+            return null;
+        }
+        
+        function parseColorInput(input) {
+            input = input.trim().toLowerCase();
+            
+            // Check if it's a hex color
+            if (input.startsWith('#')) {
+                if (input.length === 7) {
+                    const r = parseInt(input.slice(1, 3), 16);
+                    const g = parseInt(input.slice(3, 5), 16);
+                    const b = parseInt(input.slice(5, 7), 16);
+                    if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+                        return { r, g, b, hex: input };
+                    }
+                }
+                return null;
+            }
+            
+            // Check if it's a named color from our colors object
+            for (const [hex, name] of Object.entries(colors)) {
+                if (name.toLowerCase() === input) {
+                    const r = parseInt(hex.slice(1, 3), 16);
+                    const g = parseInt(hex.slice(3, 5), 16);
+                    const b = parseInt(hex.slice(5, 7), 16);
+                    return { r, g, b, hex, name };
+                }
+            }
+            
+            return null;
+        }
+        
+        function findClosestGridCell(targetColor) {
+            const numColors = parseInt(document.getElementById('num-colors').value);
+            const gridRows = parseInt(document.getElementById('grid-rows').value);
+            const gridCols = parseInt(document.getElementById('grid-cols').value);
+            
+            let closestCell = null;
+            let minDistance = Infinity;
+            
+            // Search through all grid cells
+            for (let colorIndex = 0; colorIndex < numColors; colorIndex++) {
+                const baseHue = (colorIndex * 360) / numColors;
+                
+                for (let row = 0; row < gridRows; row++) {
+                    for (let col = 0; col < gridCols; col++) {
+                        // Calculate cell color (same logic as in updateHueGrids)
+                        const cellHue = baseHue;
+                        const satRange = 80;
+                        const cellSat = (col / (gridCols - 1)) * satRange + (100 - satRange) / 2;
+                        const lightRange = 50;
+                        const cellLight = ((gridRows - 1 - row) / (gridRows - 1)) * lightRange + 25;
+                        
+                        // Convert HSL to RGB for distance calculation
+                        const cellHex = hslToHex(cellHue, cellSat, cellLight);
+                        const cellR = parseInt(cellHex.slice(1, 3), 16);
+                        const cellG = parseInt(cellHex.slice(3, 5), 16);
+                        const cellB = parseInt(cellHex.slice(5, 7), 16);
+                        
+                        // Calculate distance
+                        const distance = Math.sqrt(
+                            Math.pow(targetColor.r - cellR, 2) +
+                            Math.pow(targetColor.g - cellG, 2) +
+                            Math.pow(targetColor.b - cellB, 2)
+                        );
+                        
+                        // Get the color name for this cell
+                        const cellColorName = getClosestColorName(cellHue, Math.round(cellSat), Math.round(cellLight));
+                        
+                        // Track minimum distance for closest match
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestCell = {
+                                colorIndex,
+                                row,
+                                col,
+                                distance,
+                                cellColor: { h: cellHue, s: cellSat, l: cellLight, hex: cellHex },
+                                cellColorName
+                            };
+                        }
+                    }
+                }
+            }
+            
+            return closestCell;
+        }
+        
+        function highlightGridCell(colorIndex, row, col, clearPrevious = true, noAnimation = false) {
+            // Clear previous highlights only if requested (default behavior)
+            if (clearPrevious) {
+                document.querySelectorAll('.grid-cell.highlighted').forEach(cell => {
+                    cell.classList.remove('highlighted', 'no-animation');
+                });
+            }
+            
+            // Find and highlight the target cell
+            const hueGrids = document.getElementById('hue-grids');
+            const gridItems = hueGrids.children;
+            
+            if (gridItems[colorIndex]) {
+                const grid = gridItems[colorIndex].querySelector('.hue-grid');
+                const gridRows = grid.children;
+                if (gridRows[row]) {
+                    const cells = gridRows[row].children;
+                    if (cells[col]) {
+                        cells[col].classList.add('highlighted');
+                        if (noAnimation) {
+                            cells[col].classList.add('no-animation');
+                        }
+                        // Only scroll to the first highlighted cell when clearing previous
+                        if (clearPrevious) {
+                            cells[col].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
+        function searchColor() {
+            const searchInput = document.getElementById('color-search').value;
+            
+            if (!searchInput.trim()) {
+                alert('Please enter a color to search for.');
+                return;
+            }
+            
+            // Always use exact name matching from colors object
+            const targetColor = findExactColorByName(searchInput);
+            if (!targetColor) {
+                alert('Color name not found in JS file. Please check the exact spelling.');
+                return;
+            }
+            
+            const result = findClosestGridCell(targetColor);
+            
+            if (!result) {
+                alert('No matching color found.');
+                return;
+            }
+            
+            // Highlight the found cell (clear previous highlights)
+            const highlighted = highlightGridCell(result.colorIndex, result.row, result.col, true, false);
+            
+            if (highlighted) {
+                const colorName = targetColor.name || targetColor.hex;
+                const distance = Math.round(result.distance * 100) / 100;
+                const message = `Closest match for "${colorName}" found with distance: ${distance} (exact name match)`;
+                
+                // Show result in a temporary message
+                showSearchResult(message, result);
+            } else {
+                alert('Error highlighting the found cell.');
+            }
+        }
+        
+        function handlePreviewToggle() {
+            const previewEnabled = document.getElementById('preview-color').checked;
+            const searchInput = document.getElementById('color-search').value;
+            
+            if (previewEnabled) {
+                if (!searchInput.trim()) {
+                    alert('Please enter a color name first.');
+                    document.getElementById('preview-color').checked = false;
+                    return;
+                }
+                
+                // Always use exact name matching from colors object
+                const targetColor = findExactColorByName(searchInput);
+                if (!targetColor) {
+                    alert('Color name not found in JS file. Please check the exact spelling.');
+                    document.getElementById('preview-color').checked = false;
+                    return;
+                }
+                
+                startColorPreview(targetColor);
+            } else {
+                stopColorPreview();
+            }
+        }
+        
+        function showSearchResult(message, result) {
+            // Remove existing result message
+            const existingMsg = document.getElementById('search-result-msg');
+            if (existingMsg) existingMsg.remove();
+            
+            // Create result message
+            const resultMsg = document.createElement('div');
+            resultMsg.id = 'search-result-msg';
+            resultMsg.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background-color: #28a745;
+                color: white;
+                padding: 15px;
+                border-radius: 8px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                z-index: 1000;
+                max-width: 300px;
+                font-size: 14px;
+            `;
+            resultMsg.innerHTML = `
+                <div style="font-weight: bold; margin-bottom: 5px;">${message}</div>
+                <div style="font-size: 12px;">
+                    Grid: Color ${result.colorIndex + 1}<br>
+                    Position: Row ${result.row + 1}, Col ${result.col + 1}<br>
+                    Cell Color: ${result.cellColor.hex}
+                </div>
+                <button onclick="this.parentElement.remove()" style="
+                    position: absolute;
+                    top: 5px;
+                    right: 8px;
+                    background: none;
+                    border: none;
+                    color: white;
+                    font-size: 16px;
+                    cursor: pointer;
+                ">×</button>
+            `;
+            
+            document.body.appendChild(resultMsg);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (resultMsg.parentElement) {
+                    resultMsg.remove();
+                }
+            }, 5000);
+        }
+        
+        function clearSearch() {
+            document.getElementById('color-search').value = '';
+            
+            // Clear highlights
+            document.querySelectorAll('.grid-cell.highlighted').forEach(cell => {
+                cell.classList.remove('highlighted', 'no-animation');
+            });
+            
+            // Remove result message
+            const existingMsg = document.getElementById('search-result-msg');
+            if (existingMsg) existingMsg.remove();
+            
+            // Clear preview mode
+            stopColorPreview();
+            
+            // Clear color picker mode
+            stopColorPicker();
+        }
+        
+        function toggleColorPicker() {
+            const button = document.getElementById('color-picker-btn');
+            
+            if (isColorPickerMode) {
+                stopColorPicker();
+            } else {
+                startColorPicker();
+            }
+        }
+        
+        function startColorPicker() {
+            isColorPickerMode = true;
+            const button = document.getElementById('color-picker-btn');
+            button.style.backgroundColor = '#dc3545';
+            button.textContent = '✖️';
+            button.title = 'Click to stop color picker mode';
+            
+            // Change cursor to crosshair
+            document.body.style.cursor = 'crosshair';
+            
+            // Add event listeners for color picking
+            document.addEventListener('click', handleColorPick, true);
+            document.addEventListener('keydown', handleColorPickerKeydown);
+            
+            // Show instruction message
+            showColorPickerMessage();
+        }
+        
+        function stopColorPicker() {
+            isColorPickerMode = false;
+            const button = document.getElementById('color-picker-btn');
+            button.style.backgroundColor = '#17a2b8';
+            button.textContent = '🎨';
+            button.title = 'Click to pick a color from the spectrum or grids';
+            
+            // Reset cursor
+            document.body.style.cursor = '';
+            
+            // Remove event listeners
+            document.removeEventListener('click', handleColorPick, true);
+            document.removeEventListener('keydown', handleColorPickerKeydown);
+            
+            // Remove instruction message
+            const instructionMsg = document.getElementById('color-picker-instruction');
+            if (instructionMsg) instructionMsg.remove();
+        }
+        
+        function handleColorPick(e) {
+            if (!isColorPickerMode) return;
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const target = e.target;
+            let pickedColor = null;
+            
+            // Check if clicked on a grid cell
+            if (target.classList.contains('grid-cell')) {
+                const backgroundColor = window.getComputedStyle(target).backgroundColor;
+                pickedColor = rgbToHex(backgroundColor);
+            }
+            // Check if clicked on a spectrum segment
+            else if (target.classList.contains('color-segment')) {
+                const backgroundColor = window.getComputedStyle(target).backgroundColor;
+                pickedColor = rgbToHex(backgroundColor);
+            }
+            // Check if clicked on a spectrum band (continuous)
+            else if (target.classList.contains('spectrum-band')) {
+                // Calculate position within the band to get the hue
+                const rect = target.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const huePercent = x / rect.width;
+                const hue = huePercent * 360;
+                const saturation = parseInt(target.getAttribute('data-saturation'));
+                const lightness = parseInt(target.getAttribute('data-lightness'));
+                pickedColor = hslToHex(hue, saturation, lightness);
+            }
+            
+            if (pickedColor) {
+                // Find the closest named color
+                const closestColorName = findClosestNamedColor(pickedColor);
+                if (closestColorName) {
+                    document.getElementById('color-search').value = closestColorName;
+                    stopColorPicker();
+                    searchColor();
+                } else {
+                    alert('No named color found close enough to the picked color.');
+                }
+            }
+        }
+        
+        function handleColorPickerKeydown(e) {
+            if (e.key === 'Escape') {
+                stopColorPicker();
+            }
+        }
+        
+        function showColorPickerMessage() {
+            // Remove existing instruction message
+            const existingMsg = document.getElementById('color-picker-instruction');
+            if (existingMsg) existingMsg.remove();
+            
+            // Create instruction message
+            const instructionMsg = document.createElement('div');
+            instructionMsg.id = 'color-picker-instruction';
+            instructionMsg.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: #17a2b8;
+                color: white;
+                padding: 15px;
+                border-radius: 8px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                z-index: 1000;
+                font-size: 14px;
+                text-align: center;
+            `;
+            instructionMsg.innerHTML = `
+                <div style="font-weight: bold; margin-bottom: 5px;">Color Picker Mode Active</div>
+                <div style="font-size: 12px;">
+                    Click on any color in the spectrum bands or grid cells to search for it.<br>
+                    Press Escape or click the ✖️ button to cancel.
+                </div>
+            `;
+            
+            document.body.appendChild(instructionMsg);
+        }
+        
+        function rgbToHex(rgb) {
+            // Convert rgb(r, g, b) string to hex
+            const match = rgb.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (!match) return null;
+            
+            const r = parseInt(match[1]);
+            const g = parseInt(match[2]);
+            const b = parseInt(match[3]);
+            
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+        
+        function findClosestNamedColor(targetHex) {
+            const targetR = parseInt(targetHex.slice(1, 3), 16);
+            const targetG = parseInt(targetHex.slice(3, 5), 16);
+            const targetB = parseInt(targetHex.slice(5, 7), 16);
+            
+            let closestColor = null;
+            let minDistance = Infinity;
+            
+            for (const [hex, name] of Object.entries(colors)) {
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                
+                const distance = Math.sqrt(
+                    Math.pow(targetR - r, 2) +
+                    Math.pow(targetG - g, 2) +
+                    Math.pow(targetB - b, 2)
+                );
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestColor = name;
+                }
+            }
+            
+            // Only return if distance is reasonable (within max distance setting)
+            const maxDistance = parseInt(document.getElementById('max-distance').value);
+            return (minDistance <= maxDistance) ? closestColor : null;
+        }
+        
+        function createColorPreview() {
+            if (!colorPreviewElement) {
+                colorPreviewElement = document.createElement('div');
+                colorPreviewElement.className = 'color-preview';
+                document.body.appendChild(colorPreviewElement);
+            }
+            return colorPreviewElement;
+        }
+        
+        function startColorPreview(color) {
+            if (!color) return;
+            
+            currentPreviewColor = color;
+            isPreviewMode = true;
+            
+            const preview = createColorPreview();
+            preview.style.backgroundColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
+            preview.style.display = 'block';
+            preview.setAttribute('data-color-name', color.name || color.hex);
+            
+            // Update preview position on mouse move
+            document.addEventListener('mousemove', updatePreviewPosition);
+            document.addEventListener('keydown', handlePreviewKeydown);
+            
+            // Change cursor to indicate preview mode
+            document.body.style.cursor = 'none';
+        }
+        
+        function stopColorPreview() {
+            isPreviewMode = false;
+            currentPreviewColor = null;
+            
+            if (colorPreviewElement) {
+                colorPreviewElement.style.display = 'none';
+            }
+            
+            document.removeEventListener('mousemove', updatePreviewPosition);
+            document.removeEventListener('keydown', handlePreviewKeydown);
+            document.body.style.cursor = '';
+            
+            // Uncheck the preview checkbox
+            document.getElementById('preview-color').checked = false;
+        }
+        
+        function updatePreviewPosition(e) {
+            if (!isPreviewMode || !colorPreviewElement) return;
+            
+            colorPreviewElement.style.left = (e.clientX - 20) + 'px';
+            colorPreviewElement.style.top = (e.clientY - 20) + 'px';
+        }
+        
+        function handlePreviewKeydown(e) {
+            if (e.key === 'Escape') {
+                stopColorPreview();
+            }
+        }
+        
+        function showColorSuggestions(input) {
+            const suggestionsContainer = document.getElementById('color-suggestions');
+            const query = input.toLowerCase().trim();
+            
+            if (!query) {
+                suggestionsContainer.style.display = 'none';
+                return;
+            }
+            
+            // Find matching colors
+            const matches = [];
+            for (const [hex, name] of Object.entries(colors)) {
+                if (name.toLowerCase().includes(query)) {
+                    matches.push({ hex, name });
+                }
+            }
+            
+            if (matches.length === 0) {
+                suggestionsContainer.style.display = 'none';
+                return;
+            }
+            
+            // Sort matches by relevance (exact start match first, then contains)
+            matches.sort((a, b) => {
+                const aStartsWithQuery = a.name.toLowerCase().startsWith(query);
+                const bStartsWithQuery = b.name.toLowerCase().startsWith(query);
+                
+                if (aStartsWithQuery && !bStartsWithQuery) return -1;
+                if (!aStartsWithQuery && bStartsWithQuery) return 1;
+                
+                return a.name.localeCompare(b.name);
+            });
+            
+            // Limit to top 10 suggestions
+            const limitedMatches = matches.slice(0, 10);
+            
+            // Create suggestion items
+            suggestionsContainer.innerHTML = '';
+            limitedMatches.forEach(match => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.innerHTML = `
+                    <div class="suggestion-color" style="background-color: ${match.hex};"></div>
+                    <div class="suggestion-name">${match.name}</div>
+                `;
+                
+                item.addEventListener('mousedown', (e) => {
+                    e.preventDefault(); // Prevent blur event from firing
+                    document.getElementById('color-search').value = match.name;
+                    suggestionsContainer.style.display = 'none';
+                    searchColor(); // Automatically trigger search
+                });
+                
+                suggestionsContainer.appendChild(item);
+            });
+            
+            suggestionsContainer.style.display = 'block';
+        }
+        
+        function hideSuggestions() {
+            setTimeout(() => {
+                document.getElementById('color-suggestions').style.display = 'none';
+            }, 150); // Small delay to allow mousedown events on suggestions
+        }
+        
+        // Function to convert HSL to hex
+        function hslToHex(h, s, l) {
+            l /= 100;
+            const a = s * Math.min(l, 1 - l) / 100;
+            const f = n => {
+                const k = (n + h / 30) % 12;
+                const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                return Math.round(255 * color).toString(16).padStart(2, '0');
+            };
+            return `#${f(0)}${f(8)}${f(4)}`;
+        }
+        
+        // Function to find closest color name
+        function getClosestColorName(hue, sat, light) {
+            const targetHex = hslToHex(hue, sat, light);
+            const maxDistance = parseInt(document.getElementById('max-distance').value);
+            
+            // Convert target hex to RGB for distance calculation
+            const targetR = parseInt(targetHex.slice(1, 3), 16);
+            const targetG = parseInt(targetHex.slice(3, 5), 16);
+            const targetB = parseInt(targetHex.slice(5, 7), 16);
+            
+            let closestColor = null;
+            let minDistance = Infinity;
+            
+            for (const [hex, name] of Object.entries(colors)) {
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                
+                // Calculate Euclidean distance in RGB space
+                const distance = Math.sqrt(
+                    Math.pow(targetR - r, 2) +
+                    Math.pow(targetG - g, 2) +
+                    Math.pow(targetB - b, 2)
+                );
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestColor = name;
+                }
+            }
+            
+            // Only return color name if distance is within threshold
+            return (minDistance <= maxDistance) ? closestColor : '';
+        }
+        
+        function updateSpectrum(bandId) {
+            const numColors = parseInt(document.getElementById('num-colors').value);
+            const band = document.getElementById(bandId);
+            const saturation = parseInt(band.getAttribute('data-saturation'));
+            const lightness = parseInt(band.getAttribute('data-lightness'));
+            
+            // Clear existing segments
+            band.innerHTML = '';
+            
+            // Create color segments
+            for (let i = 0; i < numColors; i++) {
+                const hue = (i * 360) / numColors;
+                const segment = document.createElement('div');
+                segment.className = 'color-segment';
+                segment.style.backgroundColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                band.appendChild(segment);
+            }
+        }
+        
+        function updateAllSpectrums() {
+            const bands = document.querySelectorAll('.digitized-band');
+            bands.forEach(band => {
+                updateSpectrum(band.id);
+            });
+        }
+        
+        function setSaturation(rowId, value) {
+            const band = document.getElementById(rowId + '-band');
+            if (!band) return;
+            
+            let saturation = Math.max(0, Math.min(100, parseInt(value)));
+            band.setAttribute('data-saturation', saturation);
+            updateSpectrum(band.id);
+        }
+        
+        function setLightness(rowId, value) {
+            const band = document.getElementById(rowId + '-band');
+            if (!band) return;
+            
+            let lightness = Math.max(0, Math.min(100, parseInt(value)));
+            band.setAttribute('data-lightness', lightness);
+            updateSpectrum(band.id);
+        }
+        
+        function setContinuousSaturation(value) {
+            const band = document.getElementById('continuous-band');
+            if (!band) return;
+            
+            let saturation = Math.max(0, Math.min(100, parseInt(value)));
+            band.setAttribute('data-saturation', saturation);
+            updateContinuousSpectrum();
+            
+            // Update coupled digitized band
+            const digitizedBand = document.getElementById('digitized-band');
+            if (digitizedBand) {
+                digitizedBand.setAttribute('data-saturation', saturation);
+                updateSpectrum('digitized-band');
+                // Update the disabled input to show current value
+                const digitizedRow = digitizedBand.parentElement;
+                const digitizedControls = digitizedRow.querySelector('.row-controls');
+                const satInput = digitizedControls.querySelector('input[type="number"]');
+                if (satInput) satInput.value = saturation;
+                updateHueGrids();
+            }
+        }
+        
+        function setContinuousLightness(value) {
+            const band = document.getElementById('continuous-band');
+            if (!band) return;
+            
+            let lightness = Math.max(0, Math.min(100, parseInt(value)));
+            band.setAttribute('data-lightness', lightness);
+            updateContinuousSpectrum();
+            
+            // Update coupled digitized band
+            const digitizedBand = document.getElementById('digitized-band');
+            if (digitizedBand) {
+                digitizedBand.setAttribute('data-lightness', lightness);
+                updateSpectrum('digitized-band');
+                // Update the disabled input to show current value
+                const digitizedRow = digitizedBand.parentElement;
+                const digitizedControls = digitizedRow.querySelector('.row-controls');
+                const lightInputs = digitizedControls.querySelectorAll('input[type="number"]');
+                if (lightInputs[1]) lightInputs[1].value = lightness;
+                updateHueGrids();
+            }
+        }
+        
+        function updateContinuousSpectrum() {
+            const band = document.getElementById('continuous-band');
+            const saturation = parseInt(band.getAttribute('data-saturation'));
+            const lightness = parseInt(band.getAttribute('data-lightness'));
+            
+            band.style.background = `linear-gradient(to right, 
+                hsl(0, ${saturation}%, ${lightness}%),
+                hsl(60, ${saturation}%, ${lightness}%),
+                hsl(120, ${saturation}%, ${lightness}%),
+                hsl(180, ${saturation}%, ${lightness}%),
+                hsl(240, ${saturation}%, ${lightness}%),
+                hsl(300, ${saturation}%, ${lightness}%),
+                hsl(360, ${saturation}%, ${lightness}%)
+            )`;
+        }
+        
+        function removeRow(rowId) {
+            const row = document.getElementById(rowId + '-row') || document.querySelector(`[data-row-id="${rowId}"]`);
+            if (row) {
+                row.remove();
+            }
+        }
+        
+        function addRow() {
+            rowCounter++;
+            const newRowId = 'row' + rowCounter;
+            const container = document.querySelector('.spectrum-container');
+            const controlBar = container.querySelector('.control-bar');
+            
+            const newRow = document.createElement('div');
+            newRow.className = 'spectrum-row';
+            newRow.setAttribute('data-row-id', newRowId);
+            newRow.innerHTML = `
+                <div class="row-controls">
+                    <span>S:</span>
+                    <input type="number" value="100" min="0" max="100" step="1" onchange="setSaturation('${newRowId}', this.value)">
+                    <span>L:</span>
+                    <input type="number" value="50" min="0" max="100" step="1" onchange="setLightness('${newRowId}', this.value)">
+                    <button class="trash-btn" onclick="removeRow('${newRowId}')">🗑</button>
+                </div>
+                <div class="digitized-band" id="${newRowId}-band" data-saturation="100" data-lightness="50"></div>
+            `;
+            
+            container.insertBefore(newRow, controlBar);
+            updateSpectrum(newRowId + '-band');
+        }
+        
+        function updateHueAxis() {
+            const numColors = parseInt(document.getElementById('num-colors').value);
+            const hueAxis = document.getElementById('hue-axis');
+            
+            // Clear existing labels
+            hueAxis.innerHTML = '';
+            
+            // Create evenly spaced hue labels
+            const step = 360 / Math.max(6, numColors - 1); // At least 6 labels for good spacing
+            const numLabels = Math.min(7, numColors + 1); // Max 7 labels to avoid crowding
+            
+            for (let i = 0; i < numLabels; i++) {
+                const hue = Math.round((i * 360) / (numLabels - 1));
+                const label = document.createElement('span');
+                label.textContent = `${hue}°`;
+                hueAxis.appendChild(label);
+            }
+        }
+        
+        function updateHueGrids() {
+            const digitizedBand = document.getElementById('digitized-band');
+            if (!digitizedBand) return;
+            
+            const numColors = parseInt(document.getElementById('num-colors').value);
+            const gridRows = parseInt(document.getElementById('grid-rows').value);
+            const gridCols = parseInt(document.getElementById('grid-cols').value);
+            const saturation = parseInt(digitizedBand.getAttribute('data-saturation'));
+            const lightness = parseInt(digitizedBand.getAttribute('data-lightness'));
+            const cardScale = parseFloat(document.getElementById('card-scale').value);
+            const cardFontSize = parseInt(document.getElementById('card-font-size').value);
+            
+            const hueGridsContainer = document.getElementById('hue-grids');
+            hueGridsContainer.innerHTML = '';
+            
+            // Set CSS custom properties for card scale and font size
+            document.documentElement.style.setProperty('--card-scale', cardScale);
+            document.documentElement.style.setProperty('--card-font-size', cardFontSize);
+            
+            for (let colorIndex = 0; colorIndex < numColors; colorIndex++) {
+                const baseHue = (colorIndex * 360) / numColors;
+                
+                const gridItem = document.createElement('div');
+                gridItem.className = 'hue-grid-item';
+                
+                const title = document.createElement('div');
+                title.className = 'grid-title';
+                title.textContent = `Color ${colorIndex + 1} (${Math.round(baseHue)}°)`;
+                
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'axis-labels';
+                
+                const grid = document.createElement('div');
+                grid.className = 'hue-grid';
+                
+                // Create grid cells - X axis = Saturation, Y axis = Value/Lightness
+                // Using actual grid rows as specified by user
+                for (let row = 0; row < gridRows; row++) {
+                    const gridRow = document.createElement('div');
+                    gridRow.className = 'grid-row';
+                    
+                    for (let col = 0; col < gridCols; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'grid-cell';
+                        
+                        // Fixed hue for this grid
+                        const cellHue = baseHue;
+                        
+                        // X-axis (columns) = Saturation variations
+                        const satRange = 80; // 0% to 100% saturation range
+                        const cellSat = (col / (gridCols - 1)) * satRange + (100 - satRange) / 2;
+                        
+                        // Y-axis (rows) = Value/Lightness variations (top = high, bottom = low)
+                        // Adjusted range to avoid extremes: 25% to 75% lightness
+                        const lightRange = 50; // 25% to 75% lightness range
+                        const cellLight = ((gridRows - 1 - row) / (gridRows - 1)) * lightRange + 25;
+                        
+                        cell.style.backgroundColor = `hsl(${cellHue}, ${Math.round(cellSat)}%, ${Math.round(cellLight)}%)`;
+                        
+                        // Add color name
+                        const colorName = getClosestColorName(cellHue, Math.round(cellSat), Math.round(cellLight));
+                        cell.setAttribute('data-color-name', colorName);
+                        
+                        gridRow.appendChild(cell);
+                    }
+                    grid.appendChild(gridRow);
+                }
+                
+                gridContainer.appendChild(grid);
+                
+                // Add axis labels below the grid
+                const axisLabels = document.createElement('div');
+                axisLabels.style.cssText = `
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-top: 8px;
+                    font-size: 12px;
+                    color: #666;
+                    font-weight: bold;
+                `;
+                
+                const leftLabel = document.createElement('span');
+                leftLabel.textContent = 'S→  *** ';
+                
+                const rightLabel = document.createElement('span');
+                rightLabel.textContent = '  L↑';
+                
+                axisLabels.appendChild(leftLabel);
+                axisLabels.appendChild(rightLabel);
+                
+                gridItem.appendChild(title);
+                gridItem.appendChild(gridContainer);
+                gridItem.appendChild(axisLabels);
+                hueGridsContainer.appendChild(gridItem);
+            }
+        }
+        
+        // Event listener for number input changes
+        document.getElementById('num-colors').addEventListener('input', function() {
+            updateAllSpectrums();
+            updateHueAxis();
+            updateHueGrids();
+        });
+        
+        document.getElementById('grid-rows').addEventListener('input', updateHueGrids);
+        document.getElementById('grid-cols').addEventListener('input', updateHueGrids);
+        document.getElementById('max-distance').addEventListener('input', function() {
+            updateHueGrids();
+            if (document.getElementById('distance-visualizer').style.display !== 'none') {
+                drawHueSatWheel(); // Redraw wheel with updated distance circle
+            }
+        });
+        
+        document.getElementById('toggle-distance-viz').addEventListener('click', toggleDistanceVisualizer);
+        document.getElementById('toggle-color-reference').addEventListener('click', toggleColorReference);
+        document.getElementById('card-scale').addEventListener('input', updateHueGrids);
+        document.getElementById('card-font-size').addEventListener('input', updateHueGrids);
+        
+        // Color search event listeners
+        document.getElementById('search-color-btn').addEventListener('click', searchColor);
+        document.getElementById('clear-search-btn').addEventListener('click', clearSearch);
+        document.getElementById('color-picker-btn').addEventListener('click', toggleColorPicker);
+        document.getElementById('color-search').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('color-suggestions').style.display = 'none';
+                searchColor();
+            }
+        });
+        
+        // Color suggestions event listeners
+        document.getElementById('color-search').addEventListener('input', function(e) {
+            showColorSuggestions(e.target.value);
+        });
+        
+        document.getElementById('color-search').addEventListener('focus', function(e) {
+            if (e.target.value.trim()) {
+                showColorSuggestions(e.target.value);
+            }
+        });
+        
+        document.getElementById('color-search').addEventListener('blur', hideSuggestions);
+        
+        // Preview checkbox event listener
+        document.getElementById('preview-color').addEventListener('change', handlePreviewToggle);
+        
+        // Reference colors selection event listener
+        document.getElementById('select-all-reference-colors').addEventListener('change', selectAllReferenceColors);
+        
+        // Initialize on page load
+        updateAllSpectrums();
+        updateHueAxis();
+        updateContinuousSpectrum();
+        updateHueGrids();
+    </script>
+</body>
+</html>
